@@ -46,8 +46,9 @@ pipeline {
             }
         }
 
-        stage('[ZAP] Baseline passive-scan') {
+        stage('[ZAP] Passive and active scan') {
             steps {
+                echo 'Starting zap container...'
                 sh '''
                     docker run --name zap \
                         --add-host=host.docker.internal:host-gateway \
@@ -59,32 +60,28 @@ pipeline {
                         -addoninstall pscanrulesAlpha \
                         -addoninstall pscanrulesBeta \
                         -autorun /zap/wrk/active_scan.yaml"
-                '''
-            }
-        }
-
-        stage('[ZAP] Copy scan result') {
-            steps {
-                sh '''
                     docker cp zap:/zap/wrk/reports ${REPORT_DIR}/
                 '''
-            }
-        }
-
-        stage('[ZAP] Upload report to Defect Dojo') {
-            steps {
-                sh '''
-                    echo Send report to DefectDojo from: ${EMAIL}
-                '''
+                echo 'Uploading ZAP scan report to DefectDojo'
                 defectDojoPublisher(artifact: '${REPORT_DIR}/reports/zap_report.xml', 
                     productName: 'Juice Shop', 
                     scanType: 'ZAP Scan', 
                     engagementName: '${EMAIL}') 
             }
+
+            post {
+                always {
+                    sh '''
+                        docker stop zap
+                        docker rm zap
+                    '''
+                }
+            }
         }
 
         stage('[OSV-SCAN] Setup container') {
             steps {
+                echo 'Starting osv-scan container...'
                 sh '''
                     docker run -d --name osv-scan \
                         -v ${SHARED_DIR}:/src \
@@ -92,24 +89,21 @@ pipeline {
                         --format json \
                         -L /src/package-lock.json \
                         --output /src/osv-scan-results.json
-                '''
-            }
-        }
-
-        stage('[OSV-SCAN] Copy results and create artifacts') {
-            steps {
-                sh '''
                     docker cp osv-scan:/src/osv-scan-results.json ${REPORT_DIR}/
                 '''
-            }
-        }
-
-        stage('[OSV-SCAN] Upload report to Defect Dojo') {
-            steps {
+                echo 'Uploading OSV scan report to DefectDojo'
                 defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
                     productName: 'Juice Shop', 
                     scanType: 'OSV Scan', 
                     engagementName: '${EMAIL}') 
+            }
+            post {
+                always {
+                    sh '''
+                        docker stop osv-scan
+                        docker rm osv-scan
+                    '''
+                }
             }
         }
 
@@ -123,10 +117,8 @@ pipeline {
 
     post {
         always {
-        
-           sh '''
-                docker stop zap juice-shop osv-scan
-                docker rm zap
+            sh '''
+                docker stop juice-shop
             '''
         }
     }
