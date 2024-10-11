@@ -46,44 +46,42 @@ pipeline {
             }
         }
 
-        // stage('[ZAP] Baseline passive-scan') {
-        //     steps {
-        //         sh '''
-        //             docker run --name zap \
-        //                 --add-host=host.docker.internal:host-gateway \
-        //                 -v ${WORKSPACE}/:/zap/wrk/:rw \
-        //                 -v ${WORKSPACE}/reports/:/zap/wrk/reports/:rw \
-        //                 -t ghcr.io/zaproxy/zaproxy:stable bash -c \
-        //                 "zap.sh -cmd -addonupdate \
-        //                 && zap.sh -cmd -addoninstall communityScripts \
-        //                 -addoninstall pscanrulesAlpha \
-        //                 -addoninstall pscanrulesBeta \
-        //                 -autorun /zap/wrk/active_scan.yaml"
-        //         '''
-        //     }
-        // }
+        stage('[ZAP] Baseline passive-scan') {
+            steps {
+                sh '''
+                    docker run --name zap \
+                        --add-host=host.docker.internal:host-gateway \
+                        -v ${WORKSPACE}/:/zap/wrk/:rw \
+                        -v ${WORKSPACE}/reports/:/zap/wrk/reports/:rw \
+                        -t ghcr.io/zaproxy/zaproxy:stable bash -c \
+                        "zap.sh -cmd -addonupdate \
+                        && zap.sh -cmd -addoninstall communityScripts \
+                        -addoninstall pscanrulesAlpha \
+                        -addoninstall pscanrulesBeta \
+                        -autorun /zap/wrk/active_scan.yaml"
+                '''
+            }
+        }
 
-        // stage('[ZAP] Copy scan result') {
-        //     steps {
-        //         sh '''
-        //             docker cp zap:/zap/wrk/reports ${REPORT_DIR}/
-        //         '''
-        //     }
-        // }
+        stage('[ZAP] Copy scan result') {
+            steps {
+                sh '''
+                    docker cp zap:/zap/wrk/reports ${REPORT_DIR}/
+                '''
+            }
+        }
 
-        // stage('[ZAP] Upload report to Defect Dojo') {
-        //     steps {
-        //         echo 'Archiving results...'
-        //         archiveArtifacts artifacts: 'results/**/*', fingerprint: true, allowEmptyArchive: true
-        //         sh '''
-        //             echo Send report to DefectDojo from: ${EMAIL}
-        //         '''
-        //         defectDojoPublisher(artifact: '${REPORT_DIR}/reports/zap_report.xml', 
-        //             productName: 'Juice Shop', 
-        //             scanType: 'ZAP Scan', 
-        //             engagementName: '${EMAIL}') 
-        //     }
-        // }
+        stage('[ZAP] Upload report to Defect Dojo') {
+            steps {
+                sh '''
+                    echo Send report to DefectDojo from: ${EMAIL}
+                '''
+                defectDojoPublisher(artifact: '${REPORT_DIR}/reports/zap_report.xml', 
+                    productName: 'Juice Shop', 
+                    scanType: 'ZAP Scan', 
+                    engagementName: '${EMAIL}') 
+            }
+        }
 
         stage('[OSV-SCAN] Setup container') {
             steps {
@@ -108,18 +106,24 @@ pipeline {
 
         stage('[OSV-SCAN] Upload report to Defect Dojo') {
             steps {
-                echo 'Archiving results...'
-                archiveArtifacts artifacts: 'results/**/*', fingerprint: true, allowEmptyArchive: true
                 defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
                     productName: 'Juice Shop', 
                     scanType: 'OSV Scan', 
                     engagementName: '${EMAIL}') 
+            }
+        }
+
+        stage('Archive results') {
+            steps {
+                echo 'Archiving results...'
+                archiveArtifacts artifacts: 'results/**/*', fingerprint: true, allowEmptyArchive: true
             }
         }       
    }
 
     post {
         always {
+        
            sh '''
                 docker stop zap juice-shop osv-scan
                 docker rm zap
