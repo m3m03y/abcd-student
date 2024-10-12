@@ -89,13 +89,14 @@ pipeline {
                         --format json \
                         -L /src/package-lock.json \
                         --output /src/osv-scan-results.json
+                    docker logs osv-scan
                     docker cp osv-scan:/src/osv-scan-results.json ${REPORT_DIR}/
                 '''
                 echo 'Uploading OSV scan report to DefectDojo'
-                defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
-                    productName: 'Juice Shop', 
-                    scanType: 'OSV Scan', 
-                    engagementName: '${EMAIL}') 
+                // defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
+                //     productName: 'Juice Shop', 
+                //     scanType: 'OSV Scan', 
+                //     engagementName: '${EMAIL}') 
             }
             post {
                 always {
