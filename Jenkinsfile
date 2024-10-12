@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        ZAP_CONF='resources/DAST/zap'
+        ZAP_CONF='resources/dast/zap'
         APP_SRC='juice-shop'
         REPORT_DIR='results'
     }
