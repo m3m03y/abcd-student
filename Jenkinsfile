@@ -43,6 +43,7 @@ pipeline {
             steps {
                 sh '''
                     mkdir ${REPORT_DIR}
+                    mkdir reports
                 '''
             }
         }
