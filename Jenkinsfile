@@ -59,7 +59,7 @@ pipeline {
                         -v ${WORKSPACE}/${ZAP_CONF}/:/zap/wrk/:rw \
                         -v ${WORKSPACE}/reports/:/zap/wrk/reports/:rw \
                         -t ghcr.io/zaproxy/zaproxy:stable bash -c \
-                        "zap.sh -cmd -addonupdate \
+                        "ls -al /zap/wrk && zap.sh -cmd -addonupdate \
                         && zap.sh -cmd -addoninstall communityScripts \
                         -addoninstall pscanrulesAlpha \
                         -addoninstall pscanrulesBeta \
