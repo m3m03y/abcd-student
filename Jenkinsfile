@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        WORKSPACE='/home/ubuntu/abcd-student/resources'
+        ZAP_CONF='resources/DAST/zap'
+        APP_SRC='juice-shop'
         REPORT_DIR='results'
     }
 
@@ -46,45 +47,44 @@ pipeline {
             }
         }
 
-        // stage('[ZAP] Passive and active scan') {
-        //     steps {
-        //         echo 'Starting zap container...'
-        //         sh '''
-        //             docker run --name zap \
-        //                 --add-host=host.docker.internal:host-gateway \
-        //                 -v ${WORKSPACE}/:/zap/wrk/:rw \
-        //                 -v ${WORKSPACE}/reports/:/zap/wrk/reports/:rw \
-        //                 -t ghcr.io/zaproxy/zaproxy:stable bash -c \
-        //                 "zap.sh -cmd -addonupdate \
-        //                 && zap.sh -cmd -addoninstall communityScripts \
-        //                 -addoninstall pscanrulesAlpha \
-        //                 -addoninstall pscanrulesBeta \
-        //                 -autorun /zap/wrk/active_scan.yaml"
-        //             docker cp zap:/zap/wrk/reports ${REPORT_DIR}/
-        //         '''
-        //         echo 'Uploading ZAP scan report to DefectDojo'
-        //         defectDojoPublisher(artifact: '${REPORT_DIR}/reports/zap_report.xml', 
-        //             productName: 'Juice Shop', 
-        //             scanType: 'ZAP Scan', 
-        //             engagementName: '${EMAIL}') 
-        //     }
+        stage('[ZAP] Passive and active scan') {
+            steps {
+                echo 'Starting zap container...'
+                sh '''
+                    docker run --name zap \
+                        --add-host=host.docker.internal:host-gateway \
+                        -v ${ZAP_CONF}/:/zap/wrk/:rw \
+                        -t ghcr.io/zaproxy/zaproxy:stable bash -c \
+                        "zap.sh -cmd -addonupdate \
+                        && zap.sh -cmd -addoninstall communityScripts \
+                        -addoninstall pscanrulesAlpha \
+                        -addoninstall pscanrulesBeta \
+                        -autorun /zap/wrk/active_scan.yaml"
+                    docker cp zap:/zap/wrk/reports ${REPORT_DIR}/
+                '''
+                // echo 'Uploading ZAP scan report to DefectDojo'
+                // defectDojoPublisher(artifact: '${REPORT_DIR}/reports/zap_report.xml', 
+                //     productName: 'Juice Shop', 
+                //     scanType: 'ZAP Scan', 
+                //     engagementName: '${EMAIL}') 
+            }
 
-        //     post {
-        //         always {
-        //             sh '''
-        //                 docker stop zap
-        //                 docker rm zap
-        //             '''
-        //         }
-        //     }
-        // }
+            post {
+                always {
+                    sh '''
+                        docker stop zap
+                        docker rm zap
+                    '''
+                }
+            }
+        }
 
         stage('[OSV-SCAN] Setup container') {
             steps {
                 echo 'Starting osv-scan container...'
                 sh '''
                     docker run -d --name osv-scan \
-                        -v shared:/src \
+                        -v ${APP_SRC}:/src \
                         ghcr.io/google/osv-scanner \
                         --format json \
                         -L /src/package-lock.json \
@@ -92,7 +92,7 @@ pipeline {
                     docker logs osv-scan
                     docker cp osv-scan:/src/osv-scan-results.json ${REPORT_DIR}/
                 '''
-                echo 'Uploading OSV scan report to DefectDojo'
+                // echo 'Uploading OSV scan report to DefectDojo'
                 // defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
                 //     productName: 'Juice Shop', 
                 //     scanType: 'OSV Scan', 
