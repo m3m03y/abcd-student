@@ -53,7 +53,7 @@ pipeline {
                 sh '''
                     docker run --name zap \
                         --add-host=host.docker.internal:host-gateway \
-                        -v ${ZAP_CONF}/:/zap/wrk/:rw \
+                        -v ${WORKSPACE}/${ZAP_CONF}/:/zap/wrk/:rw \
                         -t ghcr.io/zaproxy/zaproxy:stable bash -c \
                         "zap.sh -cmd -addonupdate \
                         && zap.sh -cmd -addoninstall communityScripts \
@@ -84,7 +84,7 @@ pipeline {
                 echo 'Starting osv-scan container...'
                 sh '''
                     docker run -d --name osv-scan \
-                        -v ${APP_SRC}:/src \
+                        -v ${WORKSPACE}/${APP_SRC}:/src \
                         ghcr.io/google/osv-scanner \
                         --format json \
                         -L /src/package-lock.json \
