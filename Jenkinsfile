@@ -52,25 +52,13 @@ pipeline {
                 echo 'Starting zap container...'
                 echo "Workspace: ${WORKSPACE}"
                 echo "ZAP Conf: ${ZAP_CONF}"
-                // sh '''
-                //     docker run --name zap \
-                //         --add-host=host.docker.internal:host-gateway \
-                //         -v ${WORKSPACE}/${ZAP_CONF}/:/zap/wrk/:rw \
-                //         -t ghcr.io/zaproxy/zaproxy:stable bash -c \
-                //         "zap.sh -cmd -addonupdate \
-                //         && zap.sh -cmd -addoninstall communityScripts \
-                //         -addoninstall pscanrulesAlpha \
-                //         -addoninstall pscanrulesBeta \
-                //         -autorun /zap/wrk/active_scan.yaml"
-                //     docker cp zap:/zap/wrk/reports ${REPORT_DIR}/
-                // '''
                 sh '''
-                    ls ${WORKSPACE}/${ZAP_CONF}
                     docker run --name zap \
                         --add-host=host.docker.internal:host-gateway \
                         -v ${WORKSPACE}/${ZAP_CONF}/:/zap/wrk/:rw \
+                        -v ${WORKSPACE}/reports/:/zap/wrk/reports/:rw
                         -t ghcr.io/zaproxy/zaproxy:stable bash -c \
-                        "ls -al /zap/wrk/ && zap.sh -cmd -addonupdate \
+                        "zap.sh -cmd -addonupdate \
                         && zap.sh -cmd -addoninstall communityScripts \
                         -addoninstall pscanrulesAlpha \
                         -addoninstall pscanrulesBeta \
