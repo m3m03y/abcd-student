@@ -55,14 +55,13 @@ pipeline {
                 sh '''
                     docker run --name zap \
                         --add-host=host.docker.internal:host-gateway \
-                        -v ${WORKSPACE}/${ZAP_CONF}/:/zap/wrk/:rw \
-                        -v ${WORKSPACE}/reports/:/zap/wrk/reports/:rw \
+                        -v ${WORKSPACE}/${ZAP_CONF}/:/scan_conf:rw \
                         -t ghcr.io/zaproxy/zaproxy:stable bash -c \
                         "zap.sh -cmd -addonupdate \
                         && zap.sh -cmd -addoninstall communityScripts \
                         -addoninstall pscanrulesAlpha \
                         -addoninstall pscanrulesBeta \
-                        -autorun /zap/wrk/active_scan.yaml"
+                        -autorun /scan_conf/active_scan.yaml"
                     docker cp zap:/zap/wrk/reports ${REPORT_DIR}/
                 '''
                 // echo 'Uploading ZAP scan report to DefectDojo'
