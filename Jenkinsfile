@@ -85,12 +85,11 @@ pipeline {
                 echo 'Starting osv-scan container...'
                 sh '''
                     docker run --name osv-scan \
-                        -v ${WORKSPACE}/${APP_SRC}/:/src/:rw \
+                        -v ${WORKSPACE}/:/src/:rw \
                         ghcr.io/google/osv-scanner \
                         --format json \
-                        -L /src/package-lock.json \
-                        --output /src/osv-scan-results.json
-                    docker cp osv-scan:/src/osv-scan-results.json ${REPORT_DIR}/
+                        -L /src/juice-shop/package-lock.json \
+                        --output /src/results/osv-scan-results.json
                 '''
                 // echo 'Uploading OSV scan report to DefectDojo'
                 // defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
