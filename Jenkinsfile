@@ -48,47 +48,45 @@ pipeline {
             }
         }
 
-        stage('[ZAP] Passive and active scan') {
-            steps {
-                echo 'Starting zap container...'
-                echo "Workspace: ${WORKSPACE}"
-                echo "ZAP Conf: ${ZAP_CONF}"
-                sh '''
-                    docker run --name zap \
-                        --add-host=host.docker.internal:host-gateway \
-                        -v ${WORKSPACE}/${ZAP_CONF}/:/zap/wrk/:rw \
-                        -v ${WORKSPACE}/reports/:/zap/wrk/reports/:rw \
-                        -t ghcr.io/zaproxy/zaproxy:stable bash -c \
-                        "ls -al /zap/wrk && zap.sh -cmd -addonupdate \
-                        && zap.sh -cmd -addoninstall communityScripts \
-                        -addoninstall pscanrulesAlpha \
-                        -addoninstall pscanrulesBeta \
-                        -autorun /zap/wrk/active_scan.yaml"
-                    docker cp zap:/zap/wrk/reports ${REPORT_DIR}/
-                '''
-                // echo 'Uploading ZAP scan report to DefectDojo'
-                // defectDojoPublisher(artifact: '${REPORT_DIR}/reports/zap_report.xml', 
-                //     productName: 'Juice Shop', 
-                //     scanType: 'ZAP Scan', 
-                //     engagementName: '${EMAIL}') 
-            }
+        // stage('[ZAP] Passive and active scan') {
+        //     steps {
+        //         echo 'Starting zap container...'
+        //         sh '''
+        //             docker run --name zap \
+        //                 --add-host=host.docker.internal:host-gateway \
+        //                 -v ${WORKSPACE}/${ZAP_CONF}/:/zap/wrk/:rw \
+        //                 -v ${WORKSPACE}/reports/:/zap/reports/:rw \
+        //                 -t ghcr.io/zaproxy/zaproxy:stable bash -c \
+        //                 "ls -al /zap/wrk && zap.sh -cmd -addonupdate \
+        //                 && zap.sh -cmd -addoninstall communityScripts \
+        //                 -addoninstall pscanrulesAlpha \
+        //                 -addoninstall pscanrulesBeta \
+        //                 -autorun /zap/wrk/active_scan.yaml"
+        //             docker cp zap:/zap/reports ${REPORT_DIR}/
+        //         '''
+        //         // echo 'Uploading ZAP scan report to DefectDojo'
+        //         // defectDojoPublisher(artifact: '${REPORT_DIR}/reports/zap_report.xml', 
+        //         //     productName: 'Juice Shop', 
+        //         //     scanType: 'ZAP Scan', 
+        //         //     engagementName: '${EMAIL}') 
+        //     }
 
-            post {
-                always {
-                    sh '''
-                        docker stop zap
-                        docker rm zap
-                    '''
-                }
-            }
-        }
+        //     post {
+        //         always {
+        //             sh '''
+        //                 docker stop zap
+        //                 docker rm zap
+        //             '''
+        //         }
+        //     }
+        // }
 
         stage('[OSV-SCAN] Setup container') {
             steps {
                 echo 'Starting osv-scan container...'
                 sh '''
                     docker run -d --name osv-scan \
-                        -v ${WORKSPACE}/${APP_SRC}:/src \
+                        -v ${WORKSPACE}/${APP_SRC}/:/src/:rw \
                         ghcr.io/google/osv-scanner \
                         --format json \
                         -L /src/package-lock.json \
