@@ -90,6 +90,7 @@ pipeline {
                         --format json \
                         -L /src/juice-shop/package-lock.json \
                         --output /src/results/osv-scan-results.json
+                    sleep 25
                 '''
                 echo 'Uploading OSV scan report to DefectDojo'
                 defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
