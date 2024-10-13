@@ -43,7 +43,6 @@ pipeline {
             steps {
                 sh '''
                     mkdir ${REPORT_DIR}
-                    mkdir reports
                 '''
             }
         }
@@ -91,7 +90,6 @@ pipeline {
                         --format json \
                         -L /src/package-lock.json \
                         --output /src/osv-scan-results.json
-                    docker logs osv-scan
                     docker cp osv-scan:/src/osv-scan-results.json ${REPORT_DIR}/
                 '''
                 // echo 'Uploading OSV scan report to DefectDojo'
