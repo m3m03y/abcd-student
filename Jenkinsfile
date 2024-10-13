@@ -85,7 +85,7 @@ pipeline {
             steps {
                 echo 'Starting osv-scan container...'
                 sh '''
-                    docker run -d --name osv-scan \
+                    docker run --name osv-scan \
                         -v ${WORKSPACE}/${APP_SRC}/:/src/:rw \
                         ghcr.io/google/osv-scanner \
                         --format json \
