@@ -40,8 +40,8 @@ pipeline {
             steps {
                 echo 'Starting osv scan...'
                 sh '''
-                    osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/sca-osv-results.json || exit_code=$?
-                    if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/sca-osv-results.json ]; then
+                    osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/osv-scan-results.json || exit_code=$?
+                    if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/osv-scan-results.json ]; then
                         echo "Scan failed and output file is empty!"
                         exit 1
                     else
