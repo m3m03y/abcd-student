@@ -21,7 +21,7 @@ pipeline {
             steps {
                 script {
                     cleanWs()
-                    git credentialsId: 'github-token', url: 'https://github.com/m3m03y/abcd-student', branch: 'sca-implementation'
+                    git credentialsId: 'github-token', url: 'https://github.com/m3m03y/abcd-student', branch: 'osv-scan-jenkins-plugin'
                 }
             }
         }
@@ -82,16 +82,8 @@ pipeline {
 
         stage('[OSV-SCAN] Setup container') {
             steps {
-                echo 'Starting osv-scan container...'
-                sh '''
-                    docker run -d --name osv-scan \
-                        -v ${WORKSPACE}/:/src/:rw \
-                        ghcr.io/google/osv-scanner \
-                        --format json \
-                        -L /src/juice-shop/package-lock.json \
-                        --output /src/results/osv-scan-results.json
-                    sleep 25
-                '''
+                echo 'Starting osv scan...'
+                sh 'osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/sca-osv-scanner.json || true'
                 echo 'Uploading OSV scan report to DefectDojo'
                 defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
                     productName: 'Juice Shop', 
