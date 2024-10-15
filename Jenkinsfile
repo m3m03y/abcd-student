@@ -9,6 +9,7 @@ pipeline {
 
     parameters {
         string(name: 'EMAIL', defaultValue: 'email@example.com', description: 'ABC-DevSecOps user email')
+        string(name: 'BRANCH', defaultValue: 'main', description: 'ABC-DevSecOps source branch')
     }
 
     options {
@@ -21,8 +22,38 @@ pipeline {
             steps {
                 script {
                     cleanWs()
-                    git credentialsId: 'github-token', url: 'https://github.com/m3m03y/abcd-student', branch: 'sca-implementation'
+                    git credentialsId: 'github-token', url: 'https://github.com/m3m03y/abcd-student', branch: '${BRANCH}'
                 }
+            }
+        }
+
+        stage('Prepare reports space') {
+            steps {
+                sh '''
+                    mkdir ${REPORT_DIR}
+                    mkdir reports
+                '''
+            }
+        }
+
+        stage('[OSV-SCAN] Run scan') {
+            steps {
+                echo 'Starting osv scan...'
+                sh '''
+                    osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/osv-scan-results.json || exit_code=$?
+                    if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/osv-scan-results.json ]; then
+                        echo "Scan failed and output file is empty!"
+                        exit 1
+                    else
+                        echo "Scan completed successfully or results file exists."
+                        exit 0
+                    fi
+                '''
+                echo 'Uploading OSV scan report to DefectDojo'
+                defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
+                    productName: 'Juice Shop', 
+                    scanType: 'OSV Scan', 
+                    engagementName: '${EMAIL}') 
             }
         }
 
@@ -35,15 +66,6 @@ pipeline {
                         -v shared:/juice-shop \
                         bkimminich/juice-shop
                     sleep 5
-                '''
-            }
-        }
-
-        stage('Prepare reports space') {
-            steps {
-                sh '''
-                    mkdir ${REPORT_DIR}
-                    mkdir reports
                 '''
             }
         }
@@ -75,34 +97,6 @@ pipeline {
                     sh '''
                         docker stop zap
                         docker rm zap
-                    '''
-                }
-            }
-        }
-
-        stage('[OSV-SCAN] Setup container') {
-            steps {
-                echo 'Starting osv-scan container...'
-                sh '''
-                    docker run -d --name osv-scan \
-                        -v ${WORKSPACE}/:/src/:rw \
-                        ghcr.io/google/osv-scanner \
-                        --format json \
-                        -L /src/juice-shop/package-lock.json \
-                        --output /src/results/osv-scan-results.json
-                    sleep 25
-                '''
-                echo 'Uploading OSV scan report to DefectDojo'
-                defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
-                    productName: 'Juice Shop', 
-                    scanType: 'OSV Scan', 
-                    engagementName: '${EMAIL}') 
-            }
-            post {
-                always {
-                    sh '''
-                        docker stop osv-scan
-                        docker rm osv-scan
                     '''
                 }
             }
