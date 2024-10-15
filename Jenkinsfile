@@ -9,6 +9,7 @@ pipeline {
 
     parameters {
         string(name: 'EMAIL', defaultValue: 'email@example.com', description: 'ABC-DevSecOps user email')
+        string(name: 'BRANCH', defaultValue: 'main', description: 'ABC-DevSecOps source branch')
     }
 
     options {
@@ -21,7 +22,7 @@ pipeline {
             steps {
                 script {
                     cleanWs()
-                    git credentialsId: 'github-token', url: 'https://github.com/m3m03y/abcd-student', branch: 'osv-scan-jenkins-plugin'
+                    git credentialsId: 'github-token', url: 'https://github.com/m3m03y/abcd-student', branch: '${BRANCH}'
                 }
             }
         }
