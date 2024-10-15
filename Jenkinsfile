@@ -55,14 +55,6 @@ pipeline {
                     scanType: 'OSV Scan', 
                     engagementName: '${EMAIL}') 
             }
-            post {
-                always {
-                    sh '''
-                        docker stop osv-scan
-                        docker rm osv-scan
-                    '''
-                }
-            }
         }
 
         stage('Prepare Juice Shop') {
