@@ -27,6 +27,44 @@ pipeline {
             }
         }
 
+        stage('Prepare reports space') {
+            steps {
+                sh '''
+                    mkdir ${REPORT_DIR}
+                    mkdir reports
+                '''
+            }
+        }
+
+        stage('[OSV-SCAN] Run scan') {
+            steps {
+                echo 'Starting osv scan...'
+                sh '''
+                    osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/sca-osv-results.json
+                    if [ -s ${REPORT_DIR}/sca-osv-results.json ]; then
+                        echo "Scan completed successfully, output file exists and is not empty."
+                        exit 0
+                    else
+                        echo "Scan failed or output file is empty!"
+                        exit 1
+                    fi
+                '''
+                echo 'Uploading OSV scan report to DefectDojo'
+                defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
+                    productName: 'Juice Shop', 
+                    scanType: 'OSV Scan', 
+                    engagementName: '${EMAIL}') 
+            }
+            post {
+                always {
+                    sh '''
+                        docker stop osv-scan
+                        docker rm osv-scan
+                    '''
+                }
+            }
+        }
+
         stage('Prepare Juice Shop') {
             steps {
                 sh '''
@@ -36,15 +74,6 @@ pipeline {
                         -v shared:/juice-shop \
                         bkimminich/juice-shop
                     sleep 5
-                '''
-            }
-        }
-
-        stage('Prepare reports space') {
-            steps {
-                sh '''
-                    mkdir ${REPORT_DIR}
-                    mkdir reports
                 '''
             }
         }
@@ -76,26 +105,6 @@ pipeline {
                     sh '''
                         docker stop zap
                         docker rm zap
-                    '''
-                }
-            }
-        }
-
-        stage('[OSV-SCAN] Setup container') {
-            steps {
-                echo 'Starting osv scan...'
-                sh 'osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/sca-osv-scanner.json || true'
-                echo 'Uploading OSV scan report to DefectDojo'
-                defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
-                    productName: 'Juice Shop', 
-                    scanType: 'OSV Scan', 
-                    engagementName: '${EMAIL}') 
-            }
-            post {
-                always {
-                    sh '''
-                        docker stop osv-scan
-                        docker rm osv-scan
                     '''
                 }
             }
