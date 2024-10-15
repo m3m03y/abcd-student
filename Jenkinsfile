@@ -40,13 +40,13 @@ pipeline {
             steps {
                 echo 'Starting osv scan...'
                 sh '''
-                    osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/sca-osv-results.json
-                    if [ -s ${REPORT_DIR}/sca-osv-results.json ]; then
-                        echo "Scan completed successfully, output file exists and is not empty."
-                        exit 0
-                    else
-                        echo "Scan failed or output file is empty!"
+                    osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/sca-osv-results.json || exit_code=$?
+                    if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/sca-osv-results.json ]; then
+                        echo "Scan failed and output file is empty!"
                         exit 1
+                    else
+                        echo "Scan completed successfully or results file exists."
+                        exit 0
                     fi
                 '''
                 echo 'Uploading OSV scan report to DefectDojo'
