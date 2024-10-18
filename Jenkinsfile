@@ -40,7 +40,7 @@ pipeline {
             steps {
                 echo 'Starting TruffleHog scan...'
                 sh '''
-                    trufflehog git https://github.com/trufflesecurity/test_keys file://. --only-verified --json
+                    trufflehog git file://. --only-verified --json
                 '''
                 // echo 'Uploading TruffleHog scan report to DefectDojo'
                 // defectDojoPublisher(artifact: '${REPORT_DIR}/trufflehog-results.json', 
