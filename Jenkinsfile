@@ -53,7 +53,7 @@ pipeline {
         stage ('[SEMGREP] Run scan') {
             steps {
                 echo 'Starting semgrep scan...'
-                sh 'semgrep scan --semgrep-branch=main --config auto --json-output=results/semgrep_scan.json'
+                sh 'semgrep scan --config auto --json-output=results/semgrep_scan.json'
                 echo 'Starting semgrep ci scan...'
                 sh 'semgrep ci --semgrep-branch=main --config auto --json-output=results/semgrep_ci.json'
             }
