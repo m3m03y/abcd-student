@@ -53,32 +53,40 @@ pipeline {
 
         stage ('[SEMGREP] Run scan') {
             steps {
-                echo 'Starting semgrep scan...'
-                sh 'semgrep scan --config auto --json-output=results/semgrep_scan.json'
                 echo 'Starting semgrep ci scan...'
-                sh 'semgrep ci --config auto --json-output=results/semgrep_ci.json'
+                sh '''
+                    semgrep ci --config auto --json-output=results/semgrep_ci.json
+                    if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/semgrep_ci.json ]; then
+                        echo "Scan failed and output file is empty!"
+                        exit 1
+                    else
+                        echo "Scan completed successfully or results file exists."
+                        exit 0
+                    fi
+                
+                '''
             }
         }
-        // stage('[OSV-SCAN] Run scan') {
-        //     steps {
-        //         echo 'Starting osv scan...'
-        //         sh '''
-        //             osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/osv-scan-results.json || exit_code=$?
-        //             if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/osv-scan-results.json ]; then
-        //                 echo "Scan failed and output file is empty!"
-        //                 exit 1
-        //             else
-        //                 echo "Scan completed successfully or results file exists."
-        //                 exit 0
-        //             fi
-        //         '''
-        //         echo 'Uploading OSV scan report to DefectDojo'
-        //         defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
-        //             productName: 'Juice Shop', 
-        //             scanType: 'OSV Scan', 
-        //             engagementName: '${EMAIL}') 
-        //     }
-        // }
+        stage('[OSV-SCAN] Run scan') {
+            steps {
+                echo 'Starting osv scan...'
+                sh '''
+                    osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/osv-scan-results.json || exit_code=$?
+                    if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/osv-scan-results.json ]; then
+                        echo "Scan failed and output file is empty!"
+                        exit 1
+                    else
+                        echo "Scan completed successfully or results file exists."
+                        exit 0
+                    fi
+                '''
+                echo 'Uploading OSV scan report to DefectDojo'
+                defectDojoPublisher(artifact: '${REPORT_DIR}/osv-scan-results.json', 
+                    productName: 'Juice Shop', 
+                    scanType: 'OSV Scan', 
+                    engagementName: '${EMAIL}') 
+            }
+        }
 
         // stage('Prepare Juice Shop') {
         //     steps {
