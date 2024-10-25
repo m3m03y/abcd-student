@@ -5,6 +5,7 @@ pipeline {
         ZAP_CONF='resources/dast/zap'
         APP_SRC='juice-shop'
         REPORT_DIR='results'
+        SEMGREP_BRANCH='main'
     }
 
     parameters {
@@ -55,7 +56,7 @@ pipeline {
                 echo 'Starting semgrep scan...'
                 sh 'semgrep scan --config auto --json-output=results/semgrep_scan.json'
                 echo 'Starting semgrep ci scan...'
-                sh 'semgrep ci --semgrep-branch=main --config auto --json-output=results/semgrep_ci.json'
+                sh 'semgrep ci --config auto --json-output=results/semgrep_ci.json'
             }
         }
         // stage('[OSV-SCAN] Run scan') {
