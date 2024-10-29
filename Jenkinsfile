@@ -56,6 +56,7 @@ pipeline {
                 echo 'Starting semgrep scan...'
                 sh 'semgrep scan --config auto --json-output=results/semgrep_scan.json'
                 echo 'Starting semgrep ci scan...'
+                // Ignore non zero exit code only for testing with juice-shop app
                 sh '''
                     semgrep ci --config auto --json-output=results/semgrep_ci.json || exit_code=$?
                     if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/semgrep_ci.json ]; then
@@ -77,6 +78,7 @@ pipeline {
         stage('[OSV-SCAN] Run scan') {
             steps {
                 echo 'Starting osv scan...'
+                // Ignore non zero exit code only for testing with juice-shop app
                 sh '''
                     osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/osv-scan-results.json || exit_code=$?
                     if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/osv-scan-results.json ]; then
