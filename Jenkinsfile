@@ -5,6 +5,7 @@ pipeline {
         ZAP_CONF='resources/dast/zap'
         APP_SRC='juice-shop'
         REPORT_DIR='results'
+        SEMGREP_BRANCH='main'
     }
 
     parameters {
@@ -36,9 +37,48 @@ pipeline {
             }
         }
 
+        stage('[TruffleHog] Run scan') {
+            steps {
+                echo 'Starting TruffleHog scan...'
+                sh '''
+                    trufflehog git file://. --branch=main --only-verified --json > results/trufflehog-results.json
+                '''
+                echo 'Uploading TruffleHog scan report to DefectDojo'
+                defectDojoPublisher(artifact: '${REPORT_DIR}/trufflehog-results.json', 
+                    productName: 'Juice Shop', 
+                    scanType: 'Trufflehog Scan', 
+                    engagementName: '${EMAIL}') 
+            }
+        }
+
+        stage ('[SEMGREP] Run scan') {
+            steps {
+                echo 'Starting semgrep scan...'
+                sh 'semgrep scan --config auto --json-output=results/semgrep_scan.json'
+                echo 'Starting semgrep ci scan...'
+                // Ignore non zero exit code only for testing with juice-shop app
+                sh '''
+                    semgrep ci --config auto --json-output=results/semgrep_ci.json || exit_code=$?
+                    if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/semgrep_ci.json ]; then
+                        echo "Scan failed and output file is empty!"
+                        exit 1
+                    else
+                        echo "Scan completed successfully or results file exists."
+                        exit 0
+                    fi
+                '''
+                echo 'Uploading Semgrep scan report to DefectDojo'
+                defectDojoPublisher(artifact: '${REPORT_DIR}/semgrep_ci.json', 
+                    productName: 'Juice Shop', 
+                    scanType: 'Semgrep JSON Report', 
+                    engagementName: '${EMAIL}') 
+            }
+        }
+
         stage('[OSV-SCAN] Run scan') {
             steps {
                 echo 'Starting osv scan...'
+                // Ignore non zero exit code only for testing with juice-shop app
                 sh '''
                     osv-scanner scan --lockfile ${APP_SRC}/package-lock.json --format json --output ${REPORT_DIR}/osv-scan-results.json || exit_code=$?
                     if [ $exit_code -ne 0 ] && [ ! -s ${REPORT_DIR}/osv-scan-results.json ]; then
